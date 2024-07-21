@@ -17,6 +17,7 @@ function App() {
   const [isIncome, setIsIncome] = useState(true);
   const [currentMonthIndex, setCurrentMonthIndex] = useState(new Date().getMonth());
   const [isOpen, setIsOpen] = useState(false);
+  const [editMode, setEditMode] = useState(false);
   const [atomData, setAtomData] = useAtom(dataAtom);
 
   const [addFormState, setAddFormState] = useState({
@@ -29,6 +30,24 @@ function App() {
     note: '',
   });
 
+  const [editFormState, setEditFormState] = useState({
+    dateTime: '',
+    amount: '',
+    type: 'Expense',
+    category: '',
+    title: '',
+    currency: 'USD',
+    note: '',
+  });
+
+  const handleEditFormChange = (e:any) => {
+    const { name, value } = e.target;
+    setEditFormState(prevState => ({
+      ...prevState,
+      [name]: value,
+    }));
+  };
+
   const handleAddFromChange = (e: any) => {
     const { name, value } = e.target;
     setAddFormState(prevState => ({ ...prevState, [name]: value }));
@@ -36,35 +55,71 @@ function App() {
 
   const pushData = (e: any) => {
     e.preventDefault();
-    const newTransaction = {
-      dateTime: addFormState.dateTime,
-      amount: parseFloat(addFormState.amount),
-      type: isIncome ? "Income" : "Expense",
-      category: addFormState.category,
-      title: addFormState.title,
-      currency: addFormState.currency,
-      note: addFormState.note,
-    };
-    // console.log("new transaction - ", newTransaction)
-    setAtomData(prevState => [...prevState, newTransaction]);
-    setAddFormState({
-      dateTime: '',
-      amount: '',
-      type: '',
-      category: '',
-      title: '',
-      currency: '',
-      note: '',
-    })
-    setIsOpen(prev => !prev);
+
+    if (editMode) {
+      setAtomData(prevState => prevState.map(item =>
+        item.dateTime === editFormState.dateTime
+          ? { ...editFormState, amount: parseFloat(editFormState.amount) }
+          : item
+      ));
+      setEditFormState({
+        dateTime: '',
+        amount: '',
+        type: 'Expense',
+        category: '',
+        title: '',
+        currency: 'USD',
+        note: '',
+      });
+      setEditMode(false);
+    } else {
+
+      const newTransaction = {
+        dateTime: addFormState.dateTime.split(" ")[0],
+        amount: parseFloat(addFormState.amount),
+        type: isIncome ? "Income" : "Expense",
+        category: addFormState.category,
+        title: addFormState.title,
+        currency: addFormState.currency,
+        note: addFormState.note,
+      };
+      setAtomData(prevState => [...prevState, newTransaction]);
+      setAddFormState({
+        dateTime: '',
+        amount: '',
+        type: 'Expense',
+        category: '',
+        title: '',
+        currency: 'USD',
+        note: '',
+      });
+    }
+    setIsOpen(false);
+  }
+
+  const handleDelete = (transactionToDelete: any) => {
+    setAtomData(prev => prev.filter(item => item.dateTime != transactionToDelete.dateTime))
+  };
+
+  const handleUpdate = (transactionToUpdate: any) => {
+    console.log(transactionToUpdate, "isko upadate karna hai")
+    setEditFormState({
+      dateTime: transactionToUpdate.dateTime,
+      amount: transactionToUpdate.amount,
+      type: transactionToUpdate.type,
+      category: transactionToUpdate.category,
+      title: transactionToUpdate.title,
+      currency: transactionToUpdate.currency,
+      note: transactionToUpdate.note,
+    });
+    setIsOpen(true);
+    setEditMode(true);
   }
 
   const monthly_data = atomData.filter(item => parseInt(item.dateTime.split(" ")[0].split("-")[1]) - 1 === currentMonthIndex)
     .sort((a, b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime());
 
-  const [filteredData, setFilteredData] = useState<any[]>(aggregateByDate(monthly_data));
-
-  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'];
   const currentMonth = monthNames[currentMonthIndex];
 
@@ -106,11 +161,6 @@ function App() {
 
     return Object.values(aggregatedData);
   }
-
-  const handleDelete = (transactionToDelete: any) => {
-    console.log(transactionToDelete,"isko delete karna hai")
-    setAtomData(prev => prev.filter(item => item.dateTime != transactionToDelete.dateTime))
-  };
 
   let monthlyIncome: number = 0, monthlyExpenditure: number = 0;
   let incomeLabels: string[] = [];
@@ -280,22 +330,26 @@ function App() {
               </select>
 
               <div className={`${darkMode ? "bg-[#FB933D] text-white" : "border-[#FB933D] border-2 text-[#FB933D]"} p-1 items-center justify-center flex text-3xl rounded-full group duration-500 lg:mt-0 mt-2`}>
-                <IoIosAdd onClick={() => setIsOpen(prev => !prev)} className='group-hover:rotate-90 duration-500' />
+                <IoIosAdd onClick={() => {
+                  setIsOpen(true);
+                  setEditMode(false); // Reset to add mode
+                }} className='group-hover:rotate-90 duration-500' />
               </div>
 
             </div>
 
           </div>
 
+
+
           <div className='min-h-[12vh] w-full p-4 flex flex-col gap-6 duration-300 relative'>
-            {
-              isOpen &&
+            {isOpen &&
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 exit={{ scale: 0, transition: { duration: 0.3 } }}
                 transition={{ duration: 0.5, ease: 'easeIn' }}
-                className={`${darkMode ? "bg-[#292929] text-white" : "bg-gray-100 text-black"} lg:h-[53vh] lg:w-[50vh] h-[50vh]  rounded-2xl overflow-hidden duration-500 absolute right-0 origin-top`}>
+                className={`${darkMode ? "bg-[#292929] text-white" : "bg-gray-100 text-black"} lg:h-[53vh] lg:w-[50vh] h-[50vh] rounded-2xl overflow-hidden duration-500 absolute right-0 origin-top`}>
 
                 <div className="p-4">
                   <form onSubmit={pushData}>
@@ -317,54 +371,56 @@ function App() {
                       <label>Date:</label>
                       <input
                         type="date"
+                        required
                         name="dateTime"
-                        value={addFormState.dateTime}
-                        onChange={handleAddFromChange}
+                        value={editMode ? editFormState.dateTime : addFormState.dateTime}
+                        onChange={editMode ? handleEditFormChange : handleAddFromChange}
                         className="w-full mb-2 bg-transparent"
                       />
                       <label>Amount:</label>
                       <input
                         type="number"
+                        required
                         name="amount"
-                        value={addFormState.amount}
-                        onChange={handleAddFromChange}
+                        value={editMode ? editFormState.amount : addFormState.amount}
+                        onChange={editMode ? handleEditFormChange : handleAddFromChange}
                         className="w-full mb-2 bg-transparent"
                         placeholder='Enter amount'
                       />
                       <label>Category:</label>
                       <select
                         name="category"
-                        value={addFormState.category}
-                        onChange={handleAddFromChange}
+                        required
+                        value={editMode ? editFormState.category : addFormState.category}
+                        onChange={editMode ? handleEditFormChange : handleAddFromChange}
                         className="w-full mb-2 bg-transparent"
                       >
                         <option value="">Category</option>
-                        {
-                          uniqueCategories.map((category, index) => (
-                            <option key={index} value={category}>{category}</option>
-                          ))
-                        }
+                        {uniqueCategories.map((category, index) => (
+                          <option key={index} value={category}>{category}</option>
+                        ))}
                       </select>
                       <label>Title:</label>
                       <input
                         type="text"
                         name="title"
-                        value={addFormState.title}
-                        onChange={handleAddFromChange}
+                        required
+                        value={editMode ? editFormState.title : addFormState.title}
+                        onChange={editMode ? handleEditFormChange : handleAddFromChange}
                         className="w-full mb-2 bg-transparent"
                         placeholder='Enter Title'
                       />
                       <label>Notes:</label>
                       <textarea
                         name="note"
-                        value={addFormState.note}
-                        onChange={handleAddFromChange}
+                        value={editMode ? editFormState.note : addFormState.note}
+                        onChange={editMode ? handleEditFormChange : handleAddFromChange}
                         className="w-full mb-2 bg-transparent"
                         placeholder='Enter some notes'
                       />
                       <button
                         type="button"
-                        onClick={() => setIsOpen(prev => !prev)}
+                        onClick={() => setIsOpen(false)}
                         className="border-2 text-red-500 border-red-500 p-2 rounded mb-2 w-1/3"
                       >
                         Cancel
@@ -373,61 +429,61 @@ function App() {
                         type="submit"
                         className="bg-red-500 text-white p-2 rounded mb-2 w-1/3 ml-4"
                       >
-                        Save
+                        {editMode ? 'Update' : 'Save'}
                       </button>
                     </div>
                   </form>
                 </div>
               </motion.div>
             }
-            {
-              finalfilteredData.map((dayData: any, index: number) => (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.5, ease: "easeIn", delay: 0.125 * index }}
-                  key={index}
-                  className={`${darkMode ? "bg-[#292929] text-gray-200" : "bg-gray-100 text-black"} min-h-[11vh] rounded-2xl overflow-hidden`}>
+            {finalfilteredData.map((dayData:any, index:number) => (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.5, ease: "easeIn", delay: 0.125 * index }}
+                key={index}
+                className={`${darkMode ? "bg-[#292929] text-gray-200" : "bg-gray-100 text-black"} min-h-[11vh] rounded-2xl overflow-hidden`}>
 
-                  <div className='h-[5vh] rounded-t-2xl border-b-2 flex items-center justify-between lg:text-lg text-base'>
-                    <h1 className='lg:ml-3 ml-2'>Date: {dayData.date.split("-")[2]}</h1>
-                    <div className='flex gap-4 cursor-default font-extrabold lg:mr-2 mr-3  lg:w-[20%] justify-evenly'>
-                      <h1 className='text-green-500'> + {dayData.totalIncome.toFixed(2)}</h1>
-                      <h1 className='text-red-500'> - {dayData.totalExpenditure.toFixed(2)}</h1>
-                    </div>
+                <div className='h-[5vh] rounded-t-2xl border-b-2 flex items-center justify-between lg:text-lg text-base'>
+                  <h1 className='lg:ml-3 ml-2'>Date: {dayData.date.split("-")[2]}</h1>
+                  <div className='flex gap-4 cursor-default font-extrabold lg:mr-2 mr-3 lg:w-[20%] justify-evenly'>
+                    <h1 className='text-green-500'> + {dayData.totalIncome.toFixed(2)}</h1>
+                    <h1 className='text-red-500'> - {dayData.totalExpenditure.toFixed(2)}</h1>
                   </div>
+                </div>
 
-                  <div className='min-h-[6vh] mt-2 lg:px-4 px-2 py-2 duration-300'>
-                    {dayData.transactions.map((transaction: any, txnIndex: number) => (
-                      <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.5, ease: "easeIn" }}
-                        key={txnIndex}
-                        className='flex items-center justify-between lg:px-4 px-2'>
-                        <div className='lg:text-lg text-sm w-[40%]'>
-                          <h1>{transaction.title}</h1>
-                        </div>
-                        <div className='lg:text-lg text-sm lg:w-[10%]'>
-                          <h1 className={`${transaction.type === "Expense" ? "text-red-500" : "text-green-500"}`}>
-                            {transaction.amount.toFixed(2)}
-                          </h1>
-                        </div>
-                        <div className='flex lg:gap-4 gap-2'>
-                          <CiEdit className='lg:text-2xl text-xl cursor-pointer text-blue-500 hover:text-blue-800 duration-300' />
-                          <MdDeleteForever
-                            onClick={() => handleDelete(transaction)}
-                            className='lg:text-2xl text-xl cursor-pointer text-red-500 hover:text-red-800 duration-300' />
-                        </div>
-                      </motion.div>
-                    ))}
-                  </div>
-                </motion.div>
-              ))
-            }
+                <div className='min-h-[6vh] mt-2 lg:px-4 px-2 py-2 duration-300'>
+                  {dayData.transactions.map((transaction:any, txnIndex:number) => (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.5, ease: "easeIn" }}
+                      key={txnIndex}
+                      className='flex items-center justify-between lg:px-4 px-2'>
+                      <div className='lg:text-lg text-sm w-[40%]'>
+                        <h1>{transaction.title}</h1>
+                      </div>
+                      <div className='lg:text-lg text-sm lg:w-[10%]'>
+                        <h1 className={`${transaction.type === "Expense" ? "text-red-500" : "text-green-500"}`}>
+                          {transaction.amount.toFixed(2)}
+                        </h1>
+                      </div>
+                      <div className='flex lg:gap-4 gap-2'>
+                        <CiEdit
+                          onClick={() => handleUpdate(transaction)}
+                          className='lg:text-2xl text-xl cursor-pointer text-blue-500 hover:text-blue-800 duration-300' />
+                        <MdDeleteForever
+                          onClick={() => handleDelete(transaction)}
+                          className='lg:text-2xl text-xl cursor-pointer text-red-500 hover:text-red-800 duration-300' />
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </motion.div>
+            ))}
           </div>
 
 
