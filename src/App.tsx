@@ -11,6 +11,7 @@ import { MdDeleteForever } from "react-icons/md";
 import PieChart from './components/Piechart';
 import { useAtom } from 'jotai';
 import { dataAtom } from './store/store';
+import { toast } from 'sonner';
 
 function App() {
   const [darkMode, setDarkMode] = useState(false);
@@ -72,6 +73,7 @@ function App() {
         note: '',
       });
       setEditMode(false);
+      toast.success("Event Edited")
     } else {
 
       const newTransaction = {
@@ -95,10 +97,12 @@ function App() {
       });
     }
     setIsOpen(false);
+    toast.success("Event Added")
   }
 
   const handleDelete = (transactionToDelete: any) => {
     setAtomData(prev => prev.filter(item => item.dateTime != transactionToDelete.dateTime))
+    toast.success("Event Deleted")
   };
 
   const handleUpdate = (transactionToUpdate: any) => {
@@ -332,14 +336,13 @@ function App() {
               <div className={`${darkMode ? "bg-[#FB933D] text-white" : "border-[#FB933D] border-2 text-[#FB933D]"} p-1 items-center justify-center flex text-3xl rounded-full group duration-500 lg:mt-0 mt-2`}>
                 <IoIosAdd onClick={() => {
                   setIsOpen(true);
-                  setEditMode(false); // Reset to add mode
+                  setEditMode(false);
                 }} className='group-hover:rotate-90 duration-500' />
               </div>
 
             </div>
 
           </div>
-
 
 
           <div className='min-h-[12vh] w-full p-4 flex flex-col gap-6 duration-300 relative'>
@@ -371,7 +374,7 @@ function App() {
                       <label>Date:</label>
                       <input
                         type="date"
-                        required
+                        required = {!editMode}
                         name="dateTime"
                         value={editMode ? editFormState.dateTime : addFormState.dateTime}
                         onChange={editMode ? handleEditFormChange : handleAddFromChange}
