@@ -108,12 +108,8 @@ function App() {
   }
 
   const handleDelete = (transactionToDelete: any) => {
-    const updatedData = filteredData.map(dayData => ({
-      ...dayData,
-      transactions: dayData.transactions.filter((trans: any) => trans.dateTime !== transactionToDelete.dateTime)
-    }))
-      .filter(dayData => dayData.transactions.length > 0);
-    setFilteredData(updatedData);
+    console.log(transactionToDelete,"isko delete karna hai")
+    setAtomData(prev => prev.filter(item => item.dateTime != transactionToDelete.dateTime))
   };
 
   let monthlyIncome: number = 0, monthlyExpenditure: number = 0;
