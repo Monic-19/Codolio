@@ -5,16 +5,18 @@ import { CiLight } from "react-icons/ci";
 import { MdOutlineDarkMode } from "react-icons/md";
 import { FaAngleDoubleLeft, FaAngleDoubleRight } from "react-icons/fa";
 import { IoIosAdd } from "react-icons/io";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { CiEdit } from "react-icons/ci";
 import { MdDeleteForever } from "react-icons/md";
 import PieChart from './components/Piechart';
 
 function App() {
   const [darkMode, setDarkMode] = useState(false);
+  const [isIncome, setIsIncome] = useState(true);
   const [currentMonthIndex, setCurrentMonthIndex] = useState(new Date().getMonth());
+  const [isOpen, setIsOpen] = useState(false);
   const monthly_data = data.filter(item => parseInt(item.dateTime.split(" ")[0].split("-")[1]) - 1 === currentMonthIndex)
-  .sort((a, b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime());
+    .sort((a, b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime());
 
   const [filteredData, setFilteredData] = useState<any[]>(aggregateByDate(monthly_data));
 
@@ -66,7 +68,7 @@ function App() {
       ...dayData,
       transactions: dayData.transactions.filter((trans: any) => trans.dateTime !== transactionToDelete.dateTime)
     }))
-    .filter(dayData => dayData.transactions.length > 0); 
+      .filter(dayData => dayData.transactions.length > 0);
     setFilteredData(updatedData);
   };
 
@@ -126,7 +128,20 @@ function App() {
     );
   });
 
+  function pushData(){
+    data.push({
+      "dateTime": "2024-07-30 06:27:23",
+      "amount": 2122.55,
+      "type": "Expense",
+      "category": "Healthcare",
+      "title": "Rent",
+      "currency": "EUR",
+      "note": "Transaction related to Healthcare"
+  })
+  }
+
   return (
+    <AnimatePresence mode="wait">
     <div className={` ${darkMode ? "bg-[#292929]" : "bg-[#FB933D]"} min-h-[100vh] w-full flex justify-center items-center duration-500`}>
 
       <div className={` ${darkMode ? "bg-black" : "bg-white"} lg:min-h-[90vh] min-h-[95vh] lg:w-[95vw] w-[90vw] rounded-2xl shadow-2xl p-4 duration-500 my-[3vh] lg:my-7 `}>
@@ -236,14 +251,96 @@ function App() {
             </select>
 
             <div className={`${darkMode ? "bg-[#FB933D] text-white" : "border-[#FB933D] border-2 text-[#FB933D]"} p-1 items-center justify-center flex text-3xl rounded-full group duration-500 lg:mt-0 mt-2`}>
-              <IoIosAdd className='group-hover:rotate-90 duration-500' />
+              <IoIosAdd    onClick={()=>setIsOpen(prev => !prev)} className='group-hover:rotate-90 duration-500' />
             </div>
 
           </div>
 
         </div>
 
-        <div className='min-h-[12vh] w-full p-4 flex flex-col gap-6 duration-300'>
+        <div className='min-h-[12vh] w-full p-4 flex flex-col gap-6 duration-300 relative'>
+          {
+            isOpen &&
+            <motion.div 
+              initial = {{scale : 0}}
+              animate={{ scale : 1}}
+              exit={{scale : 0,  transition: { duration: 0.3 }}}
+              transition={{duration : 0.5, ease : 'easeIn'}}
+              className={`${darkMode ? "bg-[#292929] text-white" : "bg-gray-100 text-black"} lg:h-[53vh] lg:w-[50vh] h-[50vh]  rounded-2xl overflow-hidden duration-500 absolute right-0 origin-top`}>
+            <div className="h-[5vh] flex lg:text-xl text-base ">
+              <div
+                className={`${isIncome ? "bg-green-500" : ""} h-full w-1/2 flex items-center justify-center cursor-pointer duration-300`}
+                onClick={() => setIsIncome(prev => !prev)}
+              >
+                Income
+              </div>
+              <div
+                className={` ${!isIncome ? "bg-red-500" : ""}  h-full w-1/2 flex items-center justify-center cursor-pointer duration-300`}
+                onClick={() => setIsIncome(prev => !prev)}
+              >
+                Expense
+              </div>
+            </div>
+            <div className="p-4">
+
+              <div id="income-form">
+
+                <form >
+                  <label>Date:</label>
+                  <input
+                    type="date"
+                    name="date"
+                    className="w-full mb-2 bg-transparent"
+
+                  />
+                  <label>Amount:</label>
+                  <input
+                    type="number"
+                    name="amount"
+                    className="w-full mb-2 bg-transparent"
+                    placeholder='Enter amount'
+
+                  />
+                  <label>Category:</label>
+                  <select
+                    name="category"
+                    className="w-full mb-2 bg-transparent"
+                  >
+                    <option value="">Category</option>
+                    {
+                      uniqueCategories.map((category, index) => (
+                        <option key={index} value={category}>{category}</option>
+                      ))
+                    }
+                  </select>
+                  <label>Title:</label>
+                  <input
+                    type="text"
+                    name="title"
+                    className="w-full mb-2 bg-transparent"
+                    placeholder='Enter Title'
+
+                  />
+                  <label>Notes:</label>
+                  <textarea
+                    name="notes"
+                    className="w-full mb-2 bg-transparent "
+                    placeholder='Enter some notes'
+
+                  />
+                  <button 
+                    onClick={()=>setIsOpen(prev => !prev)}
+                    type="reset" 
+                    className="border-2 text-red-500 border-red-500 p-2 rounded  mb-2 w-1/3">Cancel</button>
+                  <button type="submit" className="bg-red-500 text-white p-2 rounded  mb-2 w-1/3 ml-4" onClick={pushData}>Save</button>
+                </form>
+              </div>
+
+
+
+            </div>
+          </motion.div>
+          }
           {
             finalfilteredData.map((dayData: any, index: number) => (
               <motion.div
@@ -282,7 +379,7 @@ function App() {
                       </div>
                       <div className='flex lg:gap-4 gap-2'>
                         <CiEdit className='lg:text-2xl text-xl cursor-pointer text-blue-500 hover:text-blue-800 duration-300' />
-                        <MdDeleteForever 
+                        <MdDeleteForever
                           onClick={() => handleDelete(transaction)}
                           className='lg:text-2xl text-xl cursor-pointer text-red-500 hover:text-red-800 duration-300' />
                       </div>
@@ -294,18 +391,10 @@ function App() {
           }
         </div>
 
-        <div className={`lg:h-[50vh] lg:w-[50vh] h-[50vw]  bg-purple-400`}>
-          <div className='h-[5vh] flex lg:text-xl text-base text-white'>
-            <div className='h-full w-1/2 flex items-center justify-center bg-green-500'>Income</div>
-            <div className='h-full w-1/2 flex items-center justify-center'>Expense</div>
-          </div>
-          <div>
-            
-          </div>
-        </div>
 
       </div>
     </div>
+    </AnimatePresence>
   );
 }
 
